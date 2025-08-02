@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="id" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi HPP DRF HIJAB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            transition: background-color 0.3s, background-image 0.3s;
+        }
+        /* Animasi untuk notifikasi */
+        .toast-enter {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        .toast-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .toast-exit {
+            opacity: 1;
+        }
+        .toast-exit-active {
+            opacity: 0;
+            transition: opacity 300ms;
+        }
+        /* Efek overlay untuk keterbacaan teks di atas gambar */
+        .content-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: -1;
+            transition: background-color 0.3s;
+        }
+        .dark .content-wrapper::before {
+             background-color: rgba(17, 24, 39, 0.8); /* bg-gray-900 with opacity */
+        }
+        body:not([style*="background-image"]) .content-wrapper::before {
+            background-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl relative content-wrapper">
+
+        <!-- Header dengan Tombol Dark Mode dan Background -->
+        <header class="text-center mb-8 relative">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white">
+                <i class="fas fa-cash-register text-blue-500"></i>
+                Aplikasi HPP DRF Hijab Store
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">By gaganseptian_.</p>
+            
+            <div class="absolute top-0 right-0 flex space-x-2">
+                <button id="bg-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5" title="Ganti Latar Belakang">
+                    <i class="fas fa-image w-5 h-5"></i>
+                </button>
+                 <button id="bg-remove" type="button" class="hidden text-red-500 dark:text-red-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5" title="Hapus Latar Belakang">
+                    <i class="fas fa-times w-5 h-5"></i>
+                </button>
+                <input type="file" id="bg-input" class="hidden" accept="image/*">
+
+                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5" title="Ganti Tema">
+                    <i id="theme-toggle-dark-icon" class="fas fa-moon w-5 h-5 hidden"></i>
+                    <i id="theme-toggle-light-icon" class="fas fa-sun w-5 h-5 hidden"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Bagian Pencarian -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
+                <i class="fas fa-search text-gray-400 mr-3"></i>
+                Cari Harga Barang
+            </h2>
+            <div class="relative">
+                <input type="text" id="searchInput" onkeyup="searchItem()" class="w-full p-3 pl-10 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-500 transition" placeholder="Ketik nama barang...">
+                <i class="fas fa-tag absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <div id="search-result" class="mt-4 text-lg bg-blue-50 dark:bg-gray-700 text-blue-800 dark:text-blue-300 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400 hidden">
+                <!-- Hasil pencarian akan muncul di sini -->
+            </div>
+        </div>
+
+        <!-- Bagian Form Tambah & Ubah -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-lg mb-8">
+            <h2 id="form-title" class="text-xl font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
+                <i class="fas fa-plus-circle text-gray-400 mr-3"></i>
+                Tambah Barang Baru
+            </h2>
+            <form id="itemForm" onsubmit="addOrUpdateItem(event)">
+                <input type="hidden" id="editItemId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="itemNameInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Barang</label>
+                        <input type="text" id="itemNameInput" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 transition" placeholder="Contoh: Hijab" required>
+                    </div>
+                    <div>
+                        <label for="itemPriceInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harga (Rp)</label>
+                        <input type="number" id="itemPriceInput" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 transition" placeholder="Contoh: 1500" required>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-6 space-x-3">
+                     <button type="button" id="cancelBtn" onclick="resetForm()" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition hidden">Batal</button>
+                    <button id="addUpdateBtn" type="submit" class="px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition shadow-md">
+                        <i class="fas fa-plus mr-2"></i>Tambah Barang
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bagian Daftar Barang -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
+                <i class="fas fa-list-ul text-gray-400 mr-3"></i>
+                Daftar Stok Barang
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th class="p-4 font-semibold">Nama Barang</th>
+                            <th class="p-4 font-semibold">Harga</th>
+                            <th class="p-4 font-semibold text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Data akan diisi oleh JavaScript -->
+                    </tbody>
+                </table>
+                 <div id="empty-state" class="text-center py-12 text-gray-500 dark:text-gray-400 hidden">
+                    <i class="fas fa-box-open fa-3x mb-4"></i>
+                    <p class="text-lg">Belum ada data barang.</p>
+                    <p>Silakan tambahkan barang baru menggunakan form di atas.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifikasi Toast -->
+    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-xl toast-enter">
+        <!-- Pesan notifikasi -->
+    </div>
+
+
+<script>
+    // --- DATABASE SEMENTARA ---
+    let items = JSON.parse(localStorage.getItem('inventoryItems')) || [
+        { id: 1, name: 'Buku Tulis Sinar Dunia', price: 5000 },
+        { id: 2, name: 'Pensil 2B Faber-Castell', price: 2500 },
+        { id: 3, name: 'Penghapus Joyko', price: 1500 },
+        { id: 4, name: 'Penggaris Besi 30cm', price: 7000 }
+    ];
+    let nextId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
+
+    // --- FUNGSI UTAMA ---
+
+    function saveItems() {
+        localStorage.setItem('inventoryItems', JSON.stringify(items));
+    }
+    
+    function showToast(message, isSuccess = true) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `fixed top-5 right-5 py-2 px-5 rounded-lg shadow-xl text-white ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
+        
+        toast.classList.remove('toast-exit', 'toast-exit-active');
+        toast.classList.add('toast-enter', 'toast-enter-active');
+
+        setTimeout(() => {
+            toast.classList.remove('toast-enter-active');
+            toast.classList.add('toast-exit', 'toast-exit-active');
+        }, 3000);
+    }
+
+    function renderTable() {
+        const tableBody = document.getElementById("itemTableBody");
+        const emptyState = document.getElementById("empty-state");
+        tableBody.innerHTML = ""; 
+
+        if (items.length === 0) {
+            emptyState.classList.remove('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            items.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50/50 dark:hover:bg-gray-700/50';
+                row.innerHTML = `
+                    <td class="p-4">${item.name}</td>
+                    <td class="p-4">Rp ${item.price.toLocaleString('id-ID')}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="prepareUpdate(${item.id})" class="text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400 p-2 rounded-full transition" title="Ubah">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button onclick="deleteItem(${item.id})" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-2 rounded-full transition" title="Hapus">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    }
+
+    function addOrUpdateItem(event) {
+        event.preventDefault();
+        const itemName = document.getElementById("itemNameInput").value.trim();
+        const itemPrice = document.getElementById("itemPriceInput").value;
+        const editItemId = document.getElementById("editItemId").value;
+
+        if (!itemName || !itemPrice) {
+            showToast("Nama dan harga barang tidak boleh kosong!", false);
+            return;
+        }
+
+        if (editItemId) {
+            const item = items.find(i => i.id == editItemId);
+            item.name = itemName;
+            item.price = parseInt(itemPrice);
+            showToast("Data barang berhasil diperbarui!");
+        } else {
+            const newItem = {
+                id: nextId++,
+                name: itemName,
+                price: parseInt(itemPrice)
+            };
+            items.push(newItem);
+            showToast("Barang baru berhasil ditambahkan!");
+        }
+        
+        saveItems();
+        resetForm();
+        renderTable();
+    }
+    
+    function prepareUpdate(id) {
+        const item = items.find(i => i.id === id);
+        if (item) {
+            document.getElementById("editItemId").value = item.id;
+            document.getElementById("itemNameInput").value = item.name;
+            document.getElementById("itemPriceInput").value = item.price;
+            
+            document.getElementById("form-title").innerHTML = `<i class="fas fa-edit text-gray-400 mr-3"></i> Ubah Data Barang`;
+            document.getElementById("addUpdateBtn").innerHTML = `<i class="fas fa-save mr-2"></i>Simpan Perubahan`;
+            document.getElementById("addUpdateBtn").classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            document.getElementById("addUpdateBtn").classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+            document.getElementById("cancelBtn").classList.remove('hidden');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById("itemNameInput").focus();
+        }
+    }
+
+    function deleteItem(id) {
+        if (confirm("Apakah Anda yakin ingin menghapus barang ini?")) {
+            items = items.filter(i => i.id !== id);
+            saveItems();
+            renderTable();
+            showToast("Barang berhasil dihapus.");
+        }
+    }
+
+    function searchItem() {
+        const query = document.getElementById("searchInput").value.toLowerCase();
+        const resultDiv = document.getElementById("search-result");
+
+        if (query.length === 0) {
+            resultDiv.classList.add('hidden');
+            return;
+        }
+        
+        const foundItem = items.find(item => item.name.toLowerCase().includes(query));
+
+        if (foundItem) {
+            resultDiv.innerHTML = `<strong>${foundItem.name}</strong> &rarr; Harga: <strong>Rp ${foundItem.price.toLocaleString('id-ID')}</strong>`;
+            resultDiv.classList.remove('hidden');
+        } else {
+            resultDiv.classList.add('hidden');
+        }
+    }
+    
+    function resetForm(){
+        document.getElementById("itemForm").reset();
+        document.getElementById("editItemId").value = "";
+        
+        document.getElementById("form-title").innerHTML = `<i class="fas fa-plus-circle text-gray-400 mr-3"></i> Tambah Barang Baru`;
+        document.getElementById("addUpdateBtn").innerHTML = `<i class="fas fa-plus mr-2"></i>Tambah Barang`;
+        document.getElementById("addUpdateBtn").classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+        document.getElementById("addUpdateBtn").classList.add('bg-blue-500', 'hover:bg-blue-600');
+        document.getElementById("cancelBtn").classList.add('hidden');
+    }
+
+    // --- DARK/LIGHT MODE LOGIC ---
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const themeToggleButton = document.getElementById('theme-toggle');
+
+    function applyTheme() {
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            themeToggleLightIcon.classList.remove('hidden');
+            themeToggleDarkIcon.classList.add('hidden');
+        } else {
+            document.documentElement.classList.remove('dark');
+            themeToggleDarkIcon.classList.remove('hidden');
+            themeToggleLightIcon.classList.add('hidden');
+        }
+    }
+
+    themeToggleButton.addEventListener('click', function() {
+        localStorage.setItem('color-theme', document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+        applyTheme();
+    });
+
+    // --- BACKGROUND IMAGE LOGIC ---
+    const bgToggleButton = document.getElementById('bg-toggle');
+    const bgRemoveButton = document.getElementById('bg-remove');
+    const bgInput = document.getElementById('bg-input');
+
+    function loadBackgroundImage() {
+        const savedBg = localStorage.getItem('backgroundImage');
+        if (savedBg) {
+            document.body.style.backgroundImage = `url('${savedBg}')`;
+            bgRemoveButton.classList.remove('hidden');
+        } else {
+             bgRemoveButton.classList.add('hidden');
+        }
+    }
+
+    function removeBgImage() {
+        document.body.style.backgroundImage = 'none';
+        localStorage.removeItem('backgroundImage');
+        bgRemoveButton.classList.add('hidden');
+        bgInput.value = ''; // Reset file input
+    }
+
+    bgToggleButton.addEventListener('click', () => bgInput.click());
+    bgRemoveButton.addEventListener('click', removeBgImage);
+    bgInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imageUrl = e.target.result;
+            localStorage.setItem('backgroundImage', imageUrl);
+            loadBackgroundImage();
+        }
+        reader.readAsDataURL(file);
+    });
+
+
+    // --- INISIALISASI ---
+    document.addEventListener("DOMContentLoaded", () => {
+        applyTheme();
+        loadBackgroundImage();
+        renderTable();
+        document.getElementById('toast').classList.add('toast-exit');
+    });
+
+</script>
+
+</body>
+</html>
